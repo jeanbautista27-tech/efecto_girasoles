@@ -230,6 +230,58 @@
     font-family:"Great Vibes",cursive;
     text-shadow:0 0 12px rgba(255,170,40,.8);
     pointer-events:none; opacity:.9;
+    transition: opacity 1.5s ease;
+  }
+  #titulo.desvanece{ opacity:0; }
+
+  /* =========================================================
+     PANTALLA DE LLEGADA — girasol floreciendo
+     ========================================================= */
+  #llegada{
+    position:fixed; inset:0; z-index:20;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(60,35,0,.92), rgba(7,6,10,.97));
+    opacity:0; pointer-events:none;
+    transition: opacity 1.8s ease;
+  }
+  #llegada.visible{ opacity:1; pointer-events:auto; }
+
+  #girasolLlegada{
+    width: min(70vw, 340px);
+    filter: drop-shadow(0 0 30px rgba(255,200,50,.55));
+  }
+  #girasolLlegada svg{ width:100%; display:block; overflow:visible; }
+
+  /* Cada pétalo de llegada empieza invisible y escala desde el centro */
+  .petaloLlegada{
+    fill: url(#gradPetaloL);
+    filter: url(#brilloPetaloL);
+    transform-origin: 200px 215px;   /* centro del viewBox */
+    transform: scale(0);
+    opacity: 0;
+    transition: transform 0.45s cubic-bezier(.2,1.4,.4,1), opacity 0.35s ease;
+  }
+  .petaloLlegada.bloom{
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  #mensajeLlegada{
+    margin-top: 28px;
+    font-family:"Great Vibes",cursive;
+    font-size: clamp(26px, 7vw, 46px);
+    color: #fff8d0;
+    text-align: center;
+    text-shadow: 0 0 18px #ffd140, 0 0 40px rgba(255,190,40,.5);
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 1.2s ease, transform 1.2s ease;
+    padding: 0 24px;
+    line-height: 1.4;
+  }
+  #mensajeLlegada.visible{
+    opacity: 1;
+    transform: translateY(0);
   }
 </style>
 </head>
@@ -322,6 +374,47 @@
   <canvas id="particulas"></canvas>
   <div id="vineta"></div>
   <div id="titulo">Flores para ti 🌻</div>
+</div>
+
+<!-- ===================== PANTALLA DE LLEGADA ===================== -->
+<div id="llegada">
+
+  <div id="girasolLlegada">
+    <svg id="svgLlegada" viewBox="0 0 400 460" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gradPetaloL" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#fff6d6"/>
+          <stop offset="45%"  stop-color="#ffcf4d"/>
+          <stop offset="100%" stop-color="#b9790a"/>
+        </linearGradient>
+        <radialGradient id="gradCentroL" cx="40%" cy="35%" r="70%">
+          <stop offset="0%"   stop-color="#4a3306"/>
+          <stop offset="55%"  stop-color="#1c1204"/>
+          <stop offset="100%" stop-color="#050300"/>
+        </radialGradient>
+        <filter id="brilloPetaloL" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="4" result="d"/>
+          <feMerge><feMergeNode in="d"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- tallo -->
+      <line x1="200" y1="260" x2="200" y2="450"
+            stroke="url(#gradPetaloL)" stroke-width="4"
+            filter="url(#brilloPetaloL)"
+            style="opacity:0;transition:opacity 0.6s ease 0.2s" id="talloL"/>
+      <!-- pétalos — se generan por JS -->
+      <g id="petalosLlegada"></g>
+      <!-- centro -->
+      <circle id="centroLlegada" cx="200" cy="215" r="62"
+              fill="url(#gradCentroL)"
+              style="opacity:0;transform:scale(0);transform-origin:200px 215px;
+                     transition:transform 0.5s cubic-bezier(.2,1.4,.4,1),opacity 0.4s ease"/>
+      <g id="motasLlegada"></g>
+    </svg>
+  </div>
+
+  <div id="mensajeLlegada">Para ti, Magie 🌻</div>
+
 </div>
 
 <script>
@@ -526,6 +619,12 @@ function sacudirCamara(){
 let rotX = 0.15, rotY = 0;
 let velX = VEL_X, velY = VEL_Y;
 let arrastrando = false, ultX = 0, ultY = 0;
+
+// Variables para el efecto de llegada (deben declararse antes de animar)
+let VEL_Y_actual = VEL_Y;
+let VEL_X_actual = VEL_X;
+let tiempoViaje  = 0;
+let viajeActivo  = false;
 function iniciar(x,y){ arrastrando = true; ultX = x; ultY = y; }
 function mover(x,y){
   if(!arrastrando) return;
@@ -541,7 +640,10 @@ addEventListener('touchmove', e=>mover(e.touches[0].clientX,e.touches[0].clientY
 addEventListener('touchend', soltar);
 
 function animar(){
-  if(!arrastrando){ velY += (VEL_Y-velY)*0.02; velX += (VEL_X-velX)*0.02; }
+  if(!arrastrando){
+    velY += (VEL_Y_actual - velY) * 0.02;
+    velX += (VEL_X_actual - velX) * 0.02;
+  }
   rotY += velY; rotX += velX;
   rotX = Math.max(-0.7, Math.min(0.7, rotX));
 
@@ -597,6 +699,13 @@ function animar(){
 
     o.dist *= CRECIMIENTO;
   }
+
+  // Contar tiempo de viaje y disparar llegada
+  if(viajeActivo){
+    tiempoViaje += 16;
+    if(tiempoViaje >= DURACION_VIAJE) activarLlegada();
+  }
+
   requestAnimationFrame(animar);
 }
 animar();
@@ -672,6 +781,108 @@ addEventListener('resize', ajustar);
 ajustar();
 pintarEstrellas();
 pintarParticulas();
+
+/* ============================================================
+   5) EFECTO DE LLEGADA — girasol florece pétalo a pétalo
+   ============================================================ */
+const DURACION_VIAJE = 12000; // ms antes de activar la llegada
+let llegadaActivada  = false;
+
+// Genera los pétalos del girasol de llegada (idéntica lógica al de intro)
+(function prepararGirasolLlegada(){
+  const cx = 200, cy = 215;
+  const nP  = 20;                      // más pétalos = más espectacular
+  const g   = document.getElementById('petalosLlegada');
+  for(let i = 0; i < nP; i++){
+    const ang   = (i / nP) * Math.PI * 2;
+    const largo = 145 + Math.random() * 30;
+    const ancho = 18  + Math.random() * 10;
+    const puntaX = cx + Math.cos(ang - Math.PI/2) * largo;
+    const puntaY = cy + Math.sin(ang - Math.PI/2) * largo;
+    const perpX  = Math.cos(ang - Math.PI/2 + Math.PI/2) * ancho;
+    const perpY  = Math.sin(ang - Math.PI/2 + Math.PI/2) * ancho;
+    const baseA  = [cx + perpX*0.35, cy + perpY*0.35];
+    const baseB  = [cx - perpX*0.35, cy - perpY*0.35];
+    const midX   = cx + Math.cos(ang - Math.PI/2) * largo * 0.55;
+    const midY   = cy + Math.sin(ang - Math.PI/2) * largo * 0.55;
+    const c1     = [midX + perpX, midY + perpY];
+    const c2     = [midX - perpX, midY - perpY];
+    const d = `M ${baseA[0]} ${baseA[1]}
+               Q ${c1[0]} ${c1[1]} ${puntaX} ${puntaY}
+               Q ${c2[0]} ${c2[1]} ${baseB[0]} ${baseB[1]} Z`;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d);
+    path.setAttribute('class','petaloLlegada');
+    path.setAttribute('opacity','0');
+    g.appendChild(path);
+  }
+  // motas del centro
+  const motas = document.getElementById('motasLlegada');
+  for(let i = 0; i < 180; i++){
+    const a = Math.random()*Math.PI*2, r = Math.random()*58;
+    const x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r*0.9;
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y);
+    c.setAttribute('r',  (Math.random()*1.8+0.3).toFixed(2));
+    c.setAttribute('fill', Math.random()<0.5 ? '#ffd873' : '#8a5b10');
+    c.setAttribute('opacity', '0');
+    c.style.transition = 'opacity 0.4s ease';
+    motas.appendChild(c);
+  }
+})();
+
+function activarLlegada(){
+  if(llegadaActivada) return;
+  llegadaActivada = true;
+
+  // 1) Desacelerar la esfera y el título
+  const titulo = document.getElementById('titulo');
+  titulo.classList.add('desvanece');
+
+  // Frenar velocidad gradualmente a 0
+  let frenoId = setInterval(()=>{
+    VEL_Y_actual = Math.max(0, VEL_Y_actual - 0.000045);
+    VEL_X_actual = Math.max(0, VEL_X_actual - 0.000015);
+    if(VEL_Y_actual <= 0 && VEL_X_actual <= 0) clearInterval(frenoId);
+  }, 16);
+
+  // 2) Mostrar pantalla de llegada tras 1.5s (durante el frenado)
+  setTimeout(()=>{
+    document.getElementById('llegada').classList.add('visible');
+
+    // 3) Florecimiento pétalo a pétalo
+    const petalos = document.querySelectorAll('.petaloLlegada');
+    petalos.forEach((p, i) => {
+      setTimeout(()=>{
+        p.classList.add('bloom');
+      }, i * 90);           // cada pétalo con 90ms de retraso
+    });
+
+    // 4) Tallo aparece
+    const tallo = document.getElementById('talloL');
+    tallo.style.opacity = '1';
+
+    // 5) Centro aparece después de todos los pétalos
+    setTimeout(()=>{
+      const centro = document.getElementById('centroLlegada');
+      centro.style.transform = 'scale(1)';
+      centro.style.opacity   = '1';
+      // motas del centro
+      document.querySelectorAll('#motasLlegada circle')
+        .forEach((m, i) => setTimeout(()=>{ m.style.opacity = (Math.random()*0.7+0.2).toFixed(2); }, i*6));
+    }, petalos.length * 90 + 100);
+
+    // 6) Mensaje final
+    setTimeout(()=>{
+      document.getElementById('mensajeLlegada').classList.add('visible');
+    }, petalos.length * 90 + 700);
+
+  }, 1500);
+}
+
+// Marcamos viaje activo cuando el botón arranca el viaje
+document.getElementById('boton').addEventListener('click', ()=>{ viajeActivo = true; }, { once:true });
+
 </script>
 </body>
 </html>
