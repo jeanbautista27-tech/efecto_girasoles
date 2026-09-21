@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Girasoles a toda velocidad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --oro: #ffc93c;
+    --oro-claro: #ffe9a8;
+    --fondo: #07060a;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ height:100%; overflow:hidden; background:var(--fondo); }
+  body{ font-family:"Dancing Script","Segoe UI",sans-serif; }
+
+  /* =========================================================
+     PANTALLA DE INICIO (girasol dorado + boton)
+     ========================================================= */
+  #intro{
+    position:fixed; inset:0; z-index:50;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse 70% 60% at 50% 42%, rgba(90,60,10,.35), transparent 65%), var(--fondo);
+    transition:opacity .9s ease;
+    overflow:hidden;
+  }
+  #intro.oculto{ opacity:0; pointer-events:none; }
+  #chispasIntro{ position:absolute; inset:0; width:100%; height:100%; z-index:0; }
+
+  #girasolWrap{
+    position:relative; z-index:1;
+    width:min(62vw,300px);
+    transition:transform .9s cubic-bezier(.6,0,.9,.4), filter .9s ease, opacity .9s ease;
+  }
+  #girasolWrap.lanzar{ transform:scale(7); filter:blur(18px); opacity:0; }
+  #girasolWrap svg{ width:100%; display:block; overflow:visible; }
+
+  .petalo{ fill:url(#gradPetalo); filter:url(#brilloPetalo); }
+  .centro{ fill:url(#gradCentro); }
+  .tallo{ stroke:url(#gradPetalo); stroke-width:3; filter:url(#brilloPetalo); }
+
+  /* --- Sobre --- */
+  #sobreWrap{
+    position:relative; z-index:1;
+    width:min(58vw,230px);
+    margin-top:30px;
+    cursor:pointer;
+    filter:drop-shadow(0 0 18px rgba(255,210,60,.5));
+    transition:filter .3s;
+  }
+  #sobreWrap:hover{ filter:drop-shadow(0 0 28px rgba(255,210,60,.8)); }
+  #sobreWrap svg{ width:100%; display:block; overflow:visible; }
+
+  #sobreTapa{
+    transform-origin:50% 0%;
+    transition:transform .9s cubic-bezier(.4,0,.2,1);
+  }
+  #sobreWrap.abierto #sobreTapa{ transform:rotateX(-180deg); }
+
+  /* Carta de papel */
+  #cartaPapel{
+    position:absolute;
+    left:50%; top:8px;
+    transform:translateX(-50%) translateY(0);
+    width:min(52vw,210px);
+    background:linear-gradient(155deg,#fffbe6,#fff0bc);
+    border-radius:6px;
+    padding:14px 12px 12px;
+    box-shadow:0 4px 22px rgba(0,0,0,.5);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .7s ease .45s, transform .8s cubic-bezier(.2,.8,.3,1) .35s;
+  }
+  #sobreWrap.abierto #cartaPapel{
+    opacity:1;
+    transform:translateX(-50%) translateY(-118px);
+  }
+  #cartaPapel p{
+    font-family:"Great Vibes",cursive;
+    font-size:clamp(11px,3vw,14px);
+    line-height:1.6;
+    color:#5a3500;
+    text-align:center;
+    margin:0;
+  }
+  #cartaPapel .firma{
+    margin-top:8px;
+    font-family:"Dancing Script",cursive;
+    font-size:clamp(12px,3.2vw,15px);
+    font-weight:700;
+    color:#a86b00;
+    text-align:center;
+  }
+
+  /* Hint y botón */
+  #cartaHint{
+    position:relative; z-index:1;
+    margin-top:14px;
+    font-family:"Dancing Script",cursive;
+    font-size:clamp(13px,3.5vw,16px);
+    color:rgba(255,220,100,.7);
+    letter-spacing:.4px;
+    transition:opacity .4s;
+  }
+  #cartaHint.oculto{ opacity:0; pointer-events:none; }
+
+  #boton{
+    position:relative; z-index:1;
+    margin-top:20px;
+    padding:13px 36px;
+    background:rgba(20,15,5,.55);
+    border:1.5px solid rgba(255,201,60,.8);
+    border-radius:40px;
+    color:var(--oro-claro);
+    font-family:"Great Vibes",cursive;
+    font-size:26px;
+    letter-spacing:.5px;
+    cursor:pointer;
+    box-shadow:0 0 18px rgba(255,180,40,.35), inset 0 0 14px rgba(255,180,40,.12);
+    transition:transform .25s ease, box-shadow .25s ease, opacity .5s ease;
+    animation:pulsarBoton 2.4s ease-in-out infinite;
+    opacity:0;
+    pointer-events:none;
+  }
+  #boton.visible{ opacity:1; pointer-events:auto; }
+  #boton:hover{ transform:translateY(-2px) scale(1.04); box-shadow:0 0 28px rgba(255,190,60,.6), inset 0 0 18px rgba(255,180,40,.2); }
+  #boton:active{ transform:scale(.97); }
+  #boton.oculto2{ opacity:0 !important; pointer-events:none; }
+  @keyframes pulsarBoton{
+    0%,100%{ box-shadow:0 0 18px rgba(255,180,40,.35), inset 0 0 14px rgba(255,180,40,.12); }
+    50%{ box-shadow:0 0 30px rgba(255,190,60,.65), inset 0 0 18px rgba(255,180,40,.22); }
+  }
+
+  /* Nombre Magie en el núcleo */
+  #nombreNucleo{
+    position:fixed; top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    z-index:3;
+    font-family:"Great Vibes",cursive;
+    font-size:clamp(38px,10vw,64px);
+    color:#fff8d0;
+    text-shadow:
+      0 0 18px #ffd140,
+      0 0 40px rgba(255,190,40,.6),
+      0 0 70px rgba(255,150,20,.3);
+    pointer-events:none;
+    animation:pulsarNombre 2.6s ease-in-out infinite;
+    opacity:0;
+    transition:opacity 1.2s ease;
+  }
+  #nombreNucleo.visible{ opacity:1; }
+  @keyframes pulsarNombre{
+    0%,100%{ text-shadow:0 0 18px #ffd140, 0 0 40px rgba(255,190,40,.6), 0 0 70px rgba(255,150,20,.3); transform:translate(-50%,-50%) scale(1); }
+    50%{ text-shadow:0 0 30px #ffe566, 0 0 60px rgba(255,200,60,.85), 0 0 100px rgba(255,160,30,.5); transform:translate(-50%,-50%) scale(1.08); }
+  }
+
+  /* =========================================================
+     ESCENA PRINCIPAL (efecto de velocidad / meteoros)
+     ========================================================= */
+  #viaje{
+    position:fixed; inset:0; z-index:1;
+    opacity:0; transition:opacity 1s ease;
+  }
+  #viaje.visible{ opacity:1; }
+
+  #rayos{
+    position:fixed; inset:-25%; z-index:0;
+    background:repeating-conic-gradient(from 0deg, rgba(255,210,90,.10) 0deg 2deg, transparent 2deg 9deg);
+    animation: girarRayos 40s linear infinite;
+    mix-blend-mode:screen;
+    pointer-events:none;
+  }
+  @keyframes girarRayos{ to{ transform:rotate(360deg); } }
+
+  #estrellas, #particulas{ position:fixed; inset:0; width:100%; height:100%; display:block; }
+  #estrellas{ z-index:1; }
+  #particulas{ z-index:3; pointer-events:none; }
+
+  #escena{ position:fixed; inset:0; z-index:2; perspective:600px; }
+  #esfera{ position:absolute; top:50%; left:50%; transform-style:preserve-3d; width:0; height:0; }
+
+  .item{
+    position:absolute; top:0; left:0; white-space:nowrap;
+    will-change:transform,opacity,filter;
+    transform-origin:50% 50%; user-select:none; pointer-events:none;
+  }
+  .flor{ line-height:1; }
+  .frase{
+    color:#fff; font-weight:700;
+    text-shadow:0 0 8px rgba(255,200,80,.85), 0 0 22px rgba(255,150,30,.45);
+  }
+  .frase.cursiva{ font-family:"Great Vibes",cursive; font-weight:400; }
+
+  #nucleo{
+    position:fixed; top:50%; left:50%;
+    width:min(46vw,300px); aspect-ratio:1;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,225,150,.85), rgba(255,170,40,.25) 40%, transparent 70%);
+    filter:blur(10px); z-index:2;
+    animation:latir 2.6s ease-in-out infinite;
+  }
+  @keyframes latir{ 0%,100%{ transform:translate(-50%,-50%) scale(1); opacity:.9 } 50%{ transform:translate(-50%,-50%) scale(1.25); opacity:1 } }
+
+  #vineta{
+    position:fixed; inset:0; z-index:4; pointer-events:none;
+    background:radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,.8) 100%);
+  }
+
+  .destello{
+    position:fixed; z-index:6; pointer-events:none;
+    width:150px; height:150px; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,.95), rgba(255,200,80,.55) 40%, transparent 72%);
+    transform:translate(-50%,-50%) scale(.2); opacity:0;
+    animation: destelloAnim .5s ease-out forwards;
+  }
+  @keyframes destelloAnim{
+    0%{ transform:translate(-50%,-50%) scale(.15); opacity:.95; }
+    55%{ opacity:.7; }
+    100%{ transform:translate(-50%,-50%) scale(2.6); opacity:0; }
+  }
+
+  #titulo{
+    position:fixed; left:0; right:0; bottom:26px; z-index:5;
+    text-align:center; color:var(--oro-claro);
+    font-size:clamp(20px,5vw,34px);
+    font-family:"Great Vibes",cursive;
+    text-shadow:0 0 12px rgba(255,170,40,.8);
+    pointer-events:none; opacity:.9;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== PANTALLA DE INICIO ===================== -->
+<div id="intro">
+  <canvas id="chispasIntro"></canvas>
+
+  <div id="girasolWrap">
+    <svg viewBox="0 0 400 460" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gradPetalo" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fff6d6"/>
+          <stop offset="45%" stop-color="#ffcf4d"/>
+          <stop offset="100%" stop-color="#b9790a"/>
+        </linearGradient>
+        <radialGradient id="gradCentro" cx="40%" cy="35%" r="70%">
+          <stop offset="0%" stop-color="#4a3306"/>
+          <stop offset="55%" stop-color="#1c1204"/>
+          <stop offset="100%" stop-color="#050300"/>
+        </radialGradient>
+        <filter id="brilloPetalo" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="3.2" result="difuso"/>
+          <feMerge>
+            <feMergeNode in="difuso"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
+      <!-- tallo -->
+      <line class="tallo" x1="200" y1="255" x2="200" y2="450"/>
+
+      <!-- petalos (12, distribuidos en arco tipo la referencia) -->
+      <g id="petalos"></g>
+
+      <!-- centro -->
+      <circle class="centro" cx="200" cy="215" r="60"/>
+      <g id="motasCentro"></g>
+    </svg>
+  </div>
+
+  <!-- Sobre animado -->
+  <div id="sobreWrap">
+
+    <!-- Carta de papel (sube al abrir) -->
+    <div id="cartaPapel">
+      <p>Magie,<br><br>hay personas que entran a tu vida y la hacen más bonita sin proponérselo.<br><br>Tú eres una de esas.</p>
+      <p class="firma">— Con mucho cariño 🌻</p>
+    </div>
+
+    <!-- Sobre SVG -->
+    <svg viewBox="0 0 220 150" xmlns="http://www.w3.org/2000/svg">
+      <!-- Cuerpo -->
+      <rect x="3" y="38" width="214" height="109" rx="7"
+            fill="#1a0d00" stroke="rgba(255,200,60,.6)" stroke-width="1.5"/>
+      <!-- Solapa izquierda -->
+      <polygon points="3,38 110,108 3,147"
+               fill="#2a1500" stroke="rgba(255,200,60,.35)" stroke-width="1"/>
+      <!-- Solapa derecha -->
+      <polygon points="217,38 110,108 217,147"
+               fill="#2a1500" stroke="rgba(255,200,60,.35)" stroke-width="1"/>
+      <!-- Solapa inferior -->
+      <polygon points="3,147 110,96 217,147"
+               fill="#1e1000" stroke="rgba(255,200,60,.35)" stroke-width="1"/>
+      <!-- Tapa superior (se anima) -->
+      <polygon id="sobreTapa"
+               points="3,38 110,100 217,38"
+               fill="#3a1e00" stroke="rgba(255,210,70,.7)" stroke-width="1.5"/>
+      <!-- Sello -->
+      <text x="110" y="130" text-anchor="middle" font-size="17"
+            fill="rgba(255,200,60,.85)">🌻</text>
+    </svg>
+
+  </div>
+
+  <p id="cartaHint">✦ Toca el sobre para abrir ✦</p>
+
+  <button id="boton">Iniciar este viaje</button>
+</div>
+
+<!-- ===================== ESCENA PRINCIPAL ===================== -->
+<div id="viaje">
+  <div id="rayos"></div>
+  <canvas id="estrellas"></canvas>
+  <div id="nucleo"></div>
+  <div id="nombreNucleo">Magie</div>
+  <div id="escena"><div id="esfera"></div></div>
+  <canvas id="particulas"></canvas>
+  <div id="vineta"></div>
+  <div id="titulo">Flores para ti 🌻</div>
+</div>
+
+<script>
+/* ============================================================
+   0) DIBUJAR EL GIRASOL DE LA PANTALLA DE INICIO (SVG)
+   ============================================================ */
+(function dibujarGirasol(){
+  const cx = 200, cy = 215;
+  const nPetalos = 12;
+  const grupo = document.getElementById('petalos');
+  for(let i=0;i<nPetalos;i++){
+    const ang = (i/nPetalos) * Math.PI*1.72 - Math.PI*0.86; // arco tipo abanico, no 360 completo
+    const largo = 150 + Math.random()*25;
+    const ancho = 20 + Math.random()*8;
+    const puntaX = cx + Math.cos(ang - Math.PI/2) * largo;
+    const puntaY = cy + Math.sin(ang - Math.PI/2) * largo;
+    const perpX = Math.cos(ang - Math.PI/2 + Math.PI/2) * ancho;
+    const perpY = Math.sin(ang - Math.PI/2 + Math.PI/2) * ancho;
+    const baseA = [cx+perpX*0.35, cy+perpY*0.35];
+    const baseB = [cx-perpX*0.35, cy-perpY*0.35];
+    const midX = cx + Math.cos(ang - Math.PI/2)*largo*0.55;
+    const midY = cy + Math.sin(ang - Math.PI/2)*largo*0.55;
+    const ctrl1 = [midX + perpX, midY + perpY];
+    const ctrl2 = [midX - perpX, midY - perpY];
+
+    const d = `M ${baseA[0]} ${baseA[1]}
+               Q ${ctrl1[0]} ${ctrl1[1]} ${puntaX} ${puntaY}
+               Q ${ctrl2[0]} ${ctrl2[1]} ${baseB[0]} ${baseB[1]} Z`;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d);
+    path.setAttribute('class','petalo');
+    path.setAttribute('opacity', (0.85+Math.random()*0.15).toFixed(2));
+    grupo.appendChild(path);
+  }
+  // motas doradas de textura en el centro oscuro
+  const motas = document.getElementById('motasCentro');
+  for(let i=0;i<160;i++){
+    const a = Math.random()*Math.PI*2, r = Math.random()*56;
+    const x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r*0.9;
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',x); c.setAttribute('cy',y);
+    c.setAttribute('r', (Math.random()*1.6+.3).toFixed(2));
+    c.setAttribute('fill', Math.random()<.5 ? '#ffd873' : '#8a5b10');
+    c.setAttribute('opacity', (Math.random()*.8+.2).toFixed(2));
+    motas.appendChild(c);
+  }
+})();
+
+/* chispas / polvo dorado detras del girasol en la pantalla de inicio */
+const cChispas = document.getElementById('chispasIntro'), xChispas = cChispas.getContext('2d');
+let chispas = [];
+function crearChispas(){
+  cChispas.width = innerWidth; cChispas.height = innerHeight;
+  chispas = Array.from({length: Math.round(innerWidth*innerHeight/9000)}, () => ({
+    x: Math.random()*cChispas.width, y: Math.random()*cChispas.height,
+    r: Math.random()*2+.4, a: Math.random()*Math.PI*2, v: Math.random()*.03+.01
+  }));
+}
+function pintarChispas(){
+  xChispas.clearRect(0,0,cChispas.width,cChispas.height);
+  for(const c of chispas){
+    c.a += c.v;
+    const alpha = .2 + Math.abs(Math.sin(c.a))*.8;
+    xChispas.beginPath();
+    xChispas.arc(c.x,c.y,c.r,0,Math.PI*2);
+    xChispas.fillStyle = `rgba(255,205,90,${alpha})`;
+    xChispas.fill();
+  }
+  requestAnimationFrame(pintarChispas);
+}
+addEventListener('resize', crearChispas);
+crearChispas();
+pintarChispas();
+
+/* ============================================================
+   SOBRE — lógica de apertura → reemplaza el botón directo
+   ============================================================ */
+const sobreWrap  = document.getElementById('sobreWrap');
+const cartaHint  = document.getElementById('cartaHint');
+const boton      = document.getElementById('boton');
+let sobreAbierto = false;
+
+sobreWrap.addEventListener('click', function(){
+  if (sobreAbierto) return;
+  sobreAbierto = true;
+  sobreWrap.classList.add('abierto');
+  cartaHint.classList.add('oculto');
+  // Mostrar el botón después de que la carta termine de subir
+  setTimeout(() => boton.classList.add('visible'), 1400);
+});
+
+boton.addEventListener('click', function(){
+  const intro  = document.getElementById('intro');
+  const girasol = document.getElementById('girasolWrap');
+  const viaje  = document.getElementById('viaje');
+  const nombre = document.getElementById('nombreNucleo');
+
+  this.classList.add('oculto2');
+  girasol.classList.add('lanzar');
+  intro.classList.add('oculto');
+  viaje.classList.add('visible');
+
+  setTimeout(() => {
+    intro.style.display = 'none';
+    crearDestello(innerWidth/2, innerHeight/2);
+    // Mostrar el nombre con fade-in suave
+    setTimeout(() => nombre.classList.add('visible'), 300);
+  }, 750);
+});
+
+/* ============================================================
+   1) CONFIGURACIÓN DEL EFECTO DE VELOCIDAD
+   ============================================================ */
+const FRASES = [
+  "Flores para ti","Feliz día","Eres especial","Siempre brillas",
+  "Gracias por existir","Contigo todo es mejor","Mi persona favorita",
+  "Eres pura luz","Un sol en mi vida","Te quiero mucho","Eres increíble","Nunca cambies"
+];
+const FLORES     = ["🌻","🌼","💛","🌻","🌻","🌸"];
+const NUM_FLORES = 55;
+const RADIO      = 230;
+const FOV        = 480;
+const CRECIMIENTO= 1.009;
+const VEL_Y      = 0.0009;
+const VEL_X      = 0.0003;
+
+/* ============================================================
+   2) CAMPO DE OBJETOS QUE VUELAN HACIA LA CÁMARA
+   ============================================================ */
+const esfera = document.getElementById('esfera');
+const items = [];
+
+function agregarItem(html, clase, escalaBase, esFrase){
+  const el = document.createElement('div');
+  el.className = 'item ' + clase;
+  el.innerHTML = html;
+  esfera.appendChild(el);
+  return { el, escalaBase, esFrase, sx:undefined, sy:undefined };
+}
+
+function puntosEsfera(n){
+  const pts = [], inc = Math.PI * (3 - Math.sqrt(5));
+  for(let i=0;i<n;i++){
+    const y = 1 - (i/(n-1))*2;
+    const r = Math.sqrt(1 - y*y);
+    const t = inc * i;
+    pts.push([Math.cos(t)*r, y, Math.sin(t)*r]);
+  }
+  return pts;
+}
+
+const totalFrases = FRASES.length;
+const total = NUM_FLORES + totalFrases;
+const pts = puntosEsfera(total);
+const minDist = RADIO * 0.05;
+const maxDist = RADIO * 3.1;
+
+pts.forEach((p, i) => {
+  let obj;
+  const esFrase = i % Math.round(total/totalFrases) === 0 &&
+                  items.filter(o=>o.esFrase).length < totalFrases;
+  if (esFrase){
+    const txt = FRASES[items.filter(o=>o.esFrase).length];
+    obj = agregarItem(txt, 'frase' + (Math.random()<.5 ? ' cursiva' : ''), 0.55 + Math.random()*0.35, true);
+    obj.el.style.fontSize = (15 + Math.random()*9) + 'px';
+    obj.elongMax = 1.8;
+  } else {
+    const flor = FLORES[Math.floor(Math.random()*FLORES.length)];
+    obj = agregarItem(flor, 'flor', 0.5 + Math.random()*0.6, false);
+    obj.el.style.fontSize = (20 + Math.random()*22) + 'px';
+    obj.elongMax = 4.2;
+  }
+  obj.px = p[0]; obj.py = p[1]; obj.pz = p[2];
+  obj.dist = minDist + Math.random()*(maxDist-minDist);
+  items.push(obj);
+});
+
+function reiniciarItem(o){
+  o.dist = minDist * (0.4 + Math.random()*0.7);
+  o.sx = undefined; o.sy = undefined;
+}
+
+function crearDestello(x,y){
+  const d = document.createElement('div');
+  d.className = 'destello';
+  d.style.left = x+'px'; d.style.top = y+'px';
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(), 520);
+  sacudirCamara();
+}
+function sacudirCamara(){
+  const esc = document.getElementById('escena');
+  let t = 0; const intensidad = 7;
+  const id = setInterval(()=>{
+    t++;
+    const f = 1 - t/6;
+    esc.style.transform = `translate(${(Math.random()-.5)*intensidad*f}px, ${(Math.random()-.5)*intensidad*f}px)`;
+    if(t>=6){ clearInterval(id); esc.style.transform=''; }
+  }, 16);
+}
+
+let rotX = 0.15, rotY = 0;
+let velX = VEL_X, velY = VEL_Y;
+let arrastrando = false, ultX = 0, ultY = 0;
+function iniciar(x,y){ arrastrando = true; ultX = x; ultY = y; }
+function mover(x,y){
+  if(!arrastrando) return;
+  velY = (x-ultX) * 0.00015; velX = -(y-ultY) * 0.00015;
+  ultX = x; ultY = y;
+}
+function soltar(){ arrastrando = false; }
+addEventListener('mousedown', e=>iniciar(e.clientX,e.clientY));
+addEventListener('mousemove', e=>mover(e.clientX,e.clientY));
+addEventListener('mouseup', soltar);
+addEventListener('touchstart', e=>iniciar(e.touches[0].clientX,e.touches[0].clientY), {passive:true});
+addEventListener('touchmove', e=>mover(e.touches[0].clientX,e.touches[0].clientY), {passive:true});
+addEventListener('touchend', soltar);
+
+function animar(){
+  if(!arrastrando){ velY += (VEL_Y-velY)*0.02; velX += (VEL_X-velX)*0.02; }
+  rotY += velY; rotX += velX;
+  rotX = Math.max(-0.7, Math.min(0.7, rotX));
+
+  const cy=Math.cos(rotY), sy=Math.sin(rotY), cx=Math.cos(rotX), sx=Math.sin(rotX);
+  const escalaGlobal = Math.min(1, innerWidth/430);
+  const cw = innerWidth/2, ch = innerHeight/2;
+
+  for(const o of items){
+    let x = o.px*cy - o.pz*sy;
+    let z = o.px*sy + o.pz*cy;
+    let y = o.py*cx - z*sx;
+        z = o.py*sx + z*cx;
+
+    x *= o.dist * escalaGlobal;
+    y *= o.dist * escalaGlobal;
+    z *= o.dist * escalaGlobal;
+
+    if (z > FOV*0.88 || o.dist > maxDist){
+      if (o.sx !== undefined && z > FOV*0.6 && Math.random() < 0.3){
+        crearDestello(cw + o.sx, ch + o.sy);
+      }
+      reiniciarItem(o);
+      o.el.style.opacity = 0;
+      o.dist *= CRECIMIENTO;
+      continue;
+    }
+
+    const persp = FOV / Math.max(55, FOV - z);
+    const sxPix = x*persp, syPix = y*persp;
+    const escala = persp * o.escalaBase;
+
+    let elong = 1, angDeg = 0;
+    if (o.sx !== undefined){
+      const dx = sxPix - o.sx, dy = syPix - o.sy;
+      const vel = Math.hypot(dx,dy);
+      elong = Math.min(o.elongMax, 1 + vel/16);
+      angDeg = Math.atan2(dy,dx) * 180/Math.PI;
+    }
+    o.sx = sxPix; o.sy = syPix;
+
+    let opacidad = Math.min(1, o.dist/(minDist*5));
+    if (z > FOV*0.7) opacidad *= Math.max(0, 1 - (z-FOV*0.7)/(FOV*0.18));
+    opacidad = Math.max(0, Math.min(1, opacidad));
+
+    o.el.style.transform =
+      `translate(-50%,-50%) translate3d(${sxPix}px, ${syPix}px, 0) `+
+      `rotate(${angDeg}deg) scale(${(escala*elong).toFixed(3)}, ${escala.toFixed(3)}) rotate(${-angDeg}deg)`;
+    o.el.style.opacity = opacidad.toFixed(3);
+    o.el.style.filter = o.esFrase
+      ? `blur(${Math.min(2,(elong-1)*0.6)}px)`
+      : `drop-shadow(0 0 ${6+opacidad*16}px rgba(255,180,40,${.3+opacidad*.5})) blur(${Math.min(2.5,(elong-1)*0.5)}px)`;
+    o.el.style.zIndex = Math.round(opacidad*1000);
+
+    o.dist *= CRECIMIENTO;
+  }
+  requestAnimationFrame(animar);
+}
+animar();
+
+/* ============================================================
+   3) ESTRELLAS EN TÚNEL (warp speed)
+   ============================================================ */
+const cEst = document.getElementById('estrellas'), xEst = cEst.getContext('2d');
+let estrellas = [], maxREst = 0;
+function nuevaEstrella(distInit){
+  return {
+    ang: Math.random()*Math.PI*2,
+    dist: distInit !== undefined ? distInit : Math.random()*maxREst,
+    vel: Math.random()*0.5 + 0.35,
+    grosor: Math.random()*1.6 + .5
+  };
+}
+function crearEstrellas(){
+  cEst.width = innerWidth; cEst.height = innerHeight;
+  maxREst = Math.hypot(cEst.width/2, cEst.height/2) * 1.15;
+  estrellas = Array.from({length: 160}, () => nuevaEstrella());
+}
+function pintarEstrellas(){
+  xEst.fillStyle = 'rgba(7,6,10,0.35)';
+  xEst.fillRect(0,0,cEst.width,cEst.height);
+  const cx = cEst.width/2, cy = cEst.height/2;
+  for(const e of estrellas){
+    const prev = e.dist;
+    e.vel += 0.0028;
+    e.dist += e.vel * (1 + e.dist/maxREst*2.4);
+    if (e.dist > maxREst){ Object.assign(e, nuevaEstrella(Math.random()*maxREst*0.08)); continue; }
+    const x1 = cx+Math.cos(e.ang)*prev,   y1 = cy+Math.sin(e.ang)*prev;
+    const x2 = cx+Math.cos(e.ang)*e.dist, y2 = cy+Math.sin(e.ang)*e.dist;
+    const alpha = Math.min(1, e.dist/maxREst*1.3);
+    xEst.strokeStyle = `rgba(255,225,150,${alpha})`;
+    xEst.lineWidth = e.grosor;
+    xEst.beginPath(); xEst.moveTo(x1,y1); xEst.lineTo(x2,y2); xEst.stroke();
+  }
+  requestAnimationFrame(pintarEstrellas);
+}
+
+/* ============================================================
+   4) PARTÍCULAS DORADAS (polen ambiental)
+   ============================================================ */
+const cPar = document.getElementById('particulas'), xPar = cPar.getContext('2d');
+let particulas = [];
+function nuevaParticula(alto){
+  return {
+    x: Math.random()*cPar.width, y: alto !== undefined ? alto : cPar.height+Math.random()*60,
+    r: Math.random()*2 + .6, vy: -(Math.random()*.4+.15), vx:(Math.random()-.5)*.3,
+    a: Math.random()*.5+.2, osc: Math.random()*Math.PI*2
+  };
+}
+function crearParticulas(){
+  cPar.width = innerWidth; cPar.height = innerHeight;
+  particulas = Array.from({length:50}, () => nuevaParticula(Math.random()*innerHeight));
+}
+function pintarParticulas(){
+  xPar.clearRect(0,0,cPar.width,cPar.height);
+  for(let i=0;i<particulas.length;i++){
+    const p = particulas[i];
+    p.osc += .02; p.y += p.vy; p.x += p.vx + Math.sin(p.osc)*.3;
+    if(p.y < -20) particulas[i] = nuevaParticula();
+    const g = xPar.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*4);
+    g.addColorStop(0, `rgba(255,220,130,${p.a})`); g.addColorStop(1,'rgba(255,170,40,0)');
+    xPar.fillStyle = g; xPar.beginPath(); xPar.arc(p.x,p.y,p.r*4,0,Math.PI*2); xPar.fill();
+  }
+  requestAnimationFrame(pintarParticulas);
+}
+
+function ajustar(){ crearEstrellas(); crearParticulas(); }
+addEventListener('resize', ajustar);
+ajustar();
+pintarEstrellas();
+pintarParticulas();
+</script>
+</body>
+</html>
